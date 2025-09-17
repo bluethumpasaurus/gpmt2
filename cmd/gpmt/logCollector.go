@@ -9,7 +9,7 @@ import (
 	"path/filepath"
 	"strings"
 	"time"
-
+)
 
 // logCollector archives Greenplum Database log files from the master and segment directories.
 func logCollector(archiveName string) error {
@@ -107,4 +107,3 @@ func addFileToTar(tw *tar.Writer, path string) error {
 	fmt.Printf("  - Archived %s\n", path)
 	return nil
 }
-
