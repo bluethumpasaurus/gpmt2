@@ -1,8 +1,8 @@
 /*
 Greenplum Magic Tool
 
-Authored by Tyler Ramer, Ignacio Elizaga
-Copyright 2018
+Authored by Tyler Ramer, Ignacio Elizaga, Brian Honohan
+Copyright 2018 & 2025
 
 Licensed under the Apache License, Version 2.0 (the "License")
 
@@ -13,7 +13,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/pivotal-gss/gpmt2/pkg/db"
+	"https://github.com/bluethumpasaurus/gpmt2/pkg/db"
 	"github.com/rifflock/lfshook"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
@@ -23,7 +23,7 @@ import (
 
 const (
 	gpmtVersion = "Version (pre)ALPHA"
-	githubRepo  = "https://github.com/pivotal-gss/gpmt2"
+	githubRepo  = "https://github.com/bluethumpasaurus/gpmt2"
 )
 
 type logOptions struct {

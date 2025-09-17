@@ -20,16 +20,71 @@ Copyright 2018
 package main
 
 import (
-	"os"
-
-	log "github.com/sirupsen/logrus"
+   "archive/tar"
+   "compress/gzip"
+   "flag"
+   "fmt"
+   "io"
+   "os"
+   "path/filepath"
+   "strings"
+   "time"
+   log "github.com/sirupsen/logrus"
 )
 
 func init() {
-	log.SetOutput(os.Stdout)
+   log.SetOutput(os.Stdout)
 }
 
-// the main block
+// DBNAME is the default database name to check for in logs.
+const DBNAME = "gpadmin"
+
+// AppName is the name of the application.
+const AppName = "gpmt"
+
+
 func main() {
-	Execute()
+   // Define subcommands using flagsets.
+   logCollectorCmd := flag.NewFlagSet("gp_log_collector", flag.ExitOnError)
+   analyzeSessionCmd := flag.NewFlagSet("analyze_session", flag.ExitOnError)
+   gpstatscheckCmd := flag.NewFlagSet("gpstatscheck", flag.ExitOnError)
+
+   // Add a flag for the log collector's output file.
+   archiveName := logCollectorCmd.String("o", "", "Output archive name (e.g., my_logs.tar.gz)")
+
+   // Check for the correct number of arguments.
+   if len(os.Args) < 2 {
+      fmt.Printf("Usage: %s <command> [options]\n", AppName)
+      fmt.Println("\nAvailable commands:")
+      fmt.Println("  gp_log_collector  Collect Greenplum Database log files.")
+      fmt.Println("  analyze_session   Analyze active and recent database sessions.")
+      fmt.Println("  gpstatscheck      Check for missing or stale table statistics.")
+      return
+   }
+
+   // Parse the subcommand.
+   switch os.Args[1] {
+   case "gp_log_collector":
+      logCollectorCmd.Parse(os.Args[2:])
+      if err := logCollector(*archiveName); err != nil {
+         fmt.Fprintf(os.Stderr, "Error: %v\n", err)
+         os.Exit(1)
+      }
+   case "analyze_session":
+      analyzeSessionCmd.Parse(os.Args[2:])
+      if err := analyzeSession(); err != nil {
+         fmt.Fprintf(os.Stderr, "Error: %v\n", err)
+         os.Exit(1)
+      }
+   case "gpstatscheck":
+      gpstatscheckCmd.Parse(os.Args[2:])
+      if err := gpstatscheck(); err != nil {
+         fmt.Fprintf(os.Stderr, "Error: %v\n", err)
+         os.Exit(1)
+      }
+   default:
+      fmt.Printf("Unknown command: %s\n", os.Args[1])
+      flag.PrintDefaults()
+      os.Exit(1)
+   }
 }
