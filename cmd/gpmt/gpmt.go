@@ -20,15 +20,9 @@ Copyright 2018
 package main
 
 import (
-   "archive/tar"
-   "compress/gzip"
    "flag"
    "fmt"
-   "io"
    "os"
-   "path/filepath"
-   "strings"
-   "time"
    log "github.com/sirupsen/logrus"
 )
 
@@ -36,12 +30,8 @@ func init() {
    log.SetOutput(os.Stdout)
 }
 
-// DBNAME is the default database name to check for in logs.
-const DBNAME = "gpadmin"
-
 // AppName is the name of the application.
 const AppName = "gpmt"
-
 
 func main() {
    // Define subcommands using flagsets.

@@ -1,3 +1,7 @@
+package main
+
+import "fmt"
+
 // gpstatscheck is a placeholder for the statistics checking tool.
 func gpstatscheck() error {
 	fmt.Println("This is a placeholder for the 'gpstatscheck' tool.")

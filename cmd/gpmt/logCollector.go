@@ -1,5 +1,16 @@
 package main
 
+import (
+	"archive/tar"
+	"compress/gzip"
+	"fmt"
+	"io"
+	"os"
+	"path/filepath"
+	"strings"
+	"time"
+
+
 // logCollector archives Greenplum Database log files from the master and segment directories.
 func logCollector(archiveName string) error {
 	// Default to a timestamped archive name if none is provided.

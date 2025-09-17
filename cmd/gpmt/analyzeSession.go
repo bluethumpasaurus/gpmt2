@@ -1,3 +1,7 @@
+package main
+
+import "fmt"
+
 // analyzeSession is a placeholder for the session analysis tool.
 func analyzeSession() error {
 	fmt.Println("This is a placeholder for the 'analyze_session' tool.")
