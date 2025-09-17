@@ -8,7 +8,7 @@ Greenplum Magic Tool 2 - open source rebuild of GPMT
 
 ## Goals
 
-- The ultimate goal of the project is to make an OS version of the tool
+- The ultimate goal of the project is to make an OSS version of the tool
 - Initial development will focus on replicating functionality of the original GPMT tool, in the following order of tools (subject to adjustment):
   1. gp_log_collector
   2. analyze_session
