@@ -13,10 +13,11 @@ import (
 	"fmt"
 	"time"
 
-	"https://github.com/bluethumpasaurus/gpmt2/pkg/db"
+	"github.com/bluethumpasaurus/gpmt2/pkg/db"
 	"github.com/rifflock/lfshook"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
+	"os" // Added this import
 )
 
 // Tool information constants
@@ -51,32 +52,25 @@ var versionCmd = &cobra.Command{
 	Short: "GPDB Version number",
 	Long:  `Greenplum Magic Tool version`,
 	Run: func(cmd *cobra.Command, args []string) {
-		// print the version number on the screen when asked.
-		fmt.Printf("%s: %s \n", cmd.Long, gpmtVersion)
+		fmt.Println(gpmtVersion)
 	},
 }
 
-// The root CLI.
 var rootCmd = &cobra.Command{
-	Use:   "gpmt [options]",
-	Short: "Diagnostic and data collection for Greenplum Database",
-	Long: "\nGreenplum Magic Tool is a collection of diagnostic and data collection tools to " +
-		"assist in troubleshooting issues with Greenplum Database. \n" +
-		"Documentation and development information is available at: " + githubRepo,
+	Use:   "gpmt",
+	Short: "Greenplum Magic Tool 2",
+	Long:  `An open-source rewrite of the Greenplum Magic Tool (GPMT) for database diagnostics.`,
 	PersistentPreRun: func(cmd *cobra.Command, args []string) {
-		// Before running any command
-		// Setup the logger log level
 		if logOpts.Verbose {
 			log.SetLevel(log.DebugLevel)
-		} else {
-			log.SetLevel(log.InfoLevel)
 		}
 
-		// Set logger logfile  hooks
+		// Setup logging to file
 		logName := logOpts.LogDir + logOpts.LogFile
+		log.SetOutput(os.Stdout)
 		formatter := &log.TextFormatter{
-			TimestampFormat : "2006-01-02 15:04:05",
-			FullTimestamp: true,
+			TimestampFormat: "2006-01-02 15:04:05",
+			FullTimestamp:   true,
 		}
 		log.SetFormatter(formatter)
 		log.AddHook(lfshook.NewHook(logName, &log.TextFormatter{}))
@@ -88,10 +82,24 @@ var rootCmd = &cobra.Command{
 	},
 }
 
+// Execute adds all child commands to the root command and sets flags appropriately.
+// This is called by main.main(). It only needs to happen once to the rootCmd.
+func Execute() {
+	if err := rootCmd.Execute(); err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
+}
+
+// This is the NEW entry point for the application.
+func main() {
+	Execute()
+}
+
+
 // Initialize the cobra command CLI.
 func init() {
-
-	// All global flag
+	// All global flags
 	rootCmd.PersistentFlags().BoolVarP(&logOpts.Verbose, "verbose", "v", false, "Enable verbose or debug logging")
 	rootCmd.PersistentFlags().StringVar(&logOpts.LogDir, "log-directory", "/tmp", "Directory where the logfile should be created") // TODO - logfile default may change
 
@@ -104,14 +112,10 @@ func init() {
 
 	// Attach the sub command to the root command.
 	rootCmd.AddCommand(versionCmd)
-	rootCmd.AddCommand(logCollectorCmd)
-	flagsLogCollector()
-
+	// NOTE: The other commands (logCollectorCmd, analyzeSessionCmd, etc.)
+	// will be added to rootCmd automatically by their own init() functions.
 }
 
-// Execute the cobra CLI
-func Execute() {
-	if err := rootCmd.Execute(); err != nil {
-		log.Panic(err)
-	}
-}
+// We need this empty struct definition for now to satisfy the reference in the var() block.
+// In the future, this can be moved to a more appropriate package.
+type LogCollectorOptions struct{}
