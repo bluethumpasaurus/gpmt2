@@ -115,7 +115,3 @@ func init() {
 	// NOTE: The other commands (logCollectorCmd, analyzeSessionCmd, etc.)
 	// will be added to rootCmd automatically by their own init() functions.
 }
-
-// We need this empty struct definition for now to satisfy the reference in the var() block.
-// In the future, this can be moved to a more appropriate package.
-type LogCollectorOptions struct{}
