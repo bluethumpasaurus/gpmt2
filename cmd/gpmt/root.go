@@ -110,10 +110,8 @@ func init() {
 
 	// Attach the sub command to the root command.
 	rootCmd.AddCommand(versionCmd)
-	rootCmd.AddCommand(logCollectorCmd)
-	
-	// Initialize flags for the log collector command
-	flagsLogCollector()
-	// NOTE: The other commands (analyzeSessionCmd, etc.)
+
+	// NOTE: The other commands (logCollectorCmd, analyzeSessionCmd, etc.)
 	// will be added to rootCmd automatically by their own init() functions.
+	// Each command should handle its own flag registration in its own init() function.
 }
