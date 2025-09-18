@@ -20,3 +20,6 @@ vendor/*
 
 # Build artifacts
 build/*
+
+# GPMT log archives
+gpmt_logs_*.tar.gz

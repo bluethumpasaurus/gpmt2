@@ -2,6 +2,9 @@ package main
 
 import (
 	"fmt"
+	"os"
+	"path/filepath"
+	"time"
 
 	"github.com/spf13/cobra"
 )
@@ -30,9 +33,35 @@ var logCollectorCmd = &cobra.Command{
 	Long: "\ngp_log_collector is used to automate Greenplum database log collection. \n" +
 		"Run without options, gp_log_collector will gather today's master and standby logs",
 	Run: func(cmd *cobra.Command, args []string) {
-		// log collect
-		fmt.Println("I'll be a log collector one day")
+		// Handle default values as mentioned in FIXMEs
+		if lcOpts.workingDir == "" {
+			if cwd, err := os.Getwd(); err == nil {
+				lcOpts.workingDir = cwd
+			}
+		}
 
+		if lcOpts.segmentDir == "" {
+			lcOpts.segmentDir = "/tmp"
+		}
+
+		// Handle default dates (current date if not specified)
+		if lcOpts.startDate == "" {
+			lcOpts.startDate = time.Now().Format("2006-01-02")
+		}
+
+		if lcOpts.endDate == "" {
+			lcOpts.endDate = time.Now().Format("2006-01-02")
+		}
+
+		// Create archive name based on working directory
+		timestamp := time.Now().Format("20060102_150405")
+		archiveName := filepath.Join(lcOpts.workingDir, fmt.Sprintf("gpmt_logs_%s.tar.gz", timestamp))
+
+		// Call the actual log collector function
+		if err := logCollector(archiveName); err != nil {
+			fmt.Printf("Error collecting logs: %v\n", err)
+			os.Exit(1)
+		}
 	},
 }
 
