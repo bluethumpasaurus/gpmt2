@@ -5,7 +5,6 @@ Authored by Tyler Ramer, Ignacio Elizaga, Brian Honohan
 Copyright 2018 & 2025
 
 Licensed under the Apache License, Version 2.0 (the "License")
-
 */
 package main
 
@@ -95,7 +94,6 @@ func Execute() {
 func main() {
 	Execute()
 }
-
 
 // Initialize the cobra command CLI.
 func init() {

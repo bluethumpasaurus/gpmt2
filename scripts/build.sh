@@ -1,6 +1,6 @@
 #!/bin/bash
 
-SOURCE="github.com/pivotal-gss/gpmt2/cmd/gpmt"
+SOURCE="github.com/bluethumpasaurus/gpmt2/cmd/gpmt"
 TARGET="build/gpmt"
 
 echo "building binary at build/gpmt"
