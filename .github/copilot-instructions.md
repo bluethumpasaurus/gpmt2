@@ -40,7 +40,8 @@ Run these commands in sequence for a complete setup:
 - Available subcommands:
   - `version` - Shows application version (currently "Version (pre)ALPHA")
   - `gp_log_collector` - Log collection utility (placeholder implementation)
-  - `completion` - Shell completion generation
+  - `completion` - Shell completion generation (bash, zsh, fish, powershell)
+  - `help` - Help about any command
 
 ## Validation
 
@@ -59,8 +60,32 @@ Run these commands in sequence for a complete setup:
 After making code changes, always test these scenarios:
 - **Clean build**: Remove `build/gpmt go.mod go.sum` and rebuild from scratch
 - **Flag handling**: Test `--verbose`, `--hostname`, `--port`, `--database` flags
+- **Complex flag combinations**: Test `./build/gpmt --verbose --hostname test --port 5433 gp_log_collector --no-prompts --failed-segs`
 - **Error conditions**: Test invalid commands and invalid flags
 - **Help system**: Verify `--help` works for all commands
+- **Completion**: Test `./build/gpmt completion bash` generates shell completion script
+
+### Complete End-to-End Validation
+Run this complete validation sequence after making changes:
+```bash
+# Format, lint, and build
+go fmt ./... && go vet ./... && bash scripts/build.sh
+
+# Test basic functionality
+./build/gpmt --help
+./build/gpmt version
+./build/gpmt gp_log_collector --help
+
+# Test flag combinations
+./build/gpmt --verbose --hostname test --port 5433 --database test --username user gp_log_collector --no-prompts
+
+# Test error handling
+./build/gpmt invalidcommand  # Should show error and help
+./build/gpmt --invalidflag   # Should show error and usage
+
+# Test completion
+./build/gpmt completion bash | head -10  # Should generate completion script
+```
 
 ## Critical Information
 
@@ -72,8 +97,8 @@ After making code changes, always test these scenarios:
 ### Timing Expectations
 - **NEVER CANCEL builds or long-running commands**
 - `go mod tidy`: ~13 seconds (first time), ~1 second (subsequent)
-- Build: ~0.3 seconds (incremental), ~13 seconds (clean)  
-- Linting: <1 second for all checks
+- Build: ~0.07 seconds (incremental), ~12 seconds (clean build)  
+- Linting: <1 second for all checks (`go fmt` ~0.7s, `go vet` ~3s)
 - No timeout issues expected for normal operations
 
 ### Known Limitations and Status
@@ -127,6 +152,7 @@ To add a new command:
 - Main dependencies: cobra (CLI), logrus (logging), lib/pq (PostgreSQL)
 - Run `go mod tidy` after adding new imports
 - Module path: `github.com/bluethumpasaurus/gpmt2`
+- Legacy files: `Gopkg.toml` and `Gopkg.lock` exist but are ignored (use Go modules)
 
 ## Troubleshooting
 
@@ -135,6 +161,13 @@ To add a new command:
 2. **Command not found**: Ensure command has `init()` function calling `rootCmd.AddCommand()`
 3. **Build failures**: Check that module path matches in imports and go.mod
 4. **Git tracking build artifacts**: Run `git rm --cached build/gpmt` to untrack
+5. **Permission denied on executable**: The built binary should be executable: `chmod +x build/gpmt`
+6. **Module cache issues**: Clear with `go clean -modcache` then run `go mod tidy`
+
+### Debugging Tips
+- Use `--verbose` flag to enable debug logging for any command
+- Check build directory exists: `mkdir -p build` if needed
+- Legacy files present: `Gopkg.toml` and `Gopkg.lock` exist but are not used (project uses Go modules)
 
 ### Environment Variables
 - `MASTER_DATA_DIRECTORY`: Used by log collector functionality (currently not active)
