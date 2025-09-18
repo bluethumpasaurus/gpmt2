@@ -64,7 +64,7 @@ func (scanner *MetalScanner) Scan(src interface{}) error {
 		}
 	case string:
 		value := scanner.getBytes(src)
-		scanner.value = value
+		scanner.value = string(value)
 		scanner.valid = true
 	case []byte:
 		value := scanner.getBytes(src)
