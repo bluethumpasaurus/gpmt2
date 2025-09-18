@@ -9,7 +9,54 @@ import (
 	"path/filepath"
 	"strings"
 	"time"
+
+	log "github.com/sirupsen/logrus"
 )
+
+// getLogDirectoryFromDB queries the database to get the actual log directory path
+func getLogDirectoryFromDB() (string, error) {
+	const query = "select distinct datadir || '/log' from gp_segment_configuration where content='-1';"
+
+	log.Debug("Querying database for log directory path")
+
+	// Try to execute the query, but handle any panics from connection failures
+	var result []map[string]interface{}
+	var err error
+
+	func() {
+		defer func() {
+			if r := recover(); r != nil {
+				err = fmt.Errorf("database connection failed: %v", r)
+			}
+		}()
+		result, err = connString.ExecuteQuery(query)
+	}()
+
+	if err != nil {
+		return "", fmt.Errorf("failed to query database for log directory: %w", err)
+	}
+
+	if len(result) == 0 {
+		return "", fmt.Errorf("no log directory found in gp_segment_configuration")
+	}
+
+	// Extract the directory path from the result
+	for _, row := range result {
+		for _, value := range row {
+			if str, ok := value.(string); ok && str != "" {
+				logDir := strings.TrimSpace(str)
+				log.Debugf("Found log directory from database: %s", logDir)
+				return logDir, nil
+			} else if bytes, ok := value.([]byte); ok && len(bytes) > 0 {
+				logDir := strings.TrimSpace(string(bytes))
+				log.Debugf("Found log directory from database: %s", logDir)
+				return logDir, nil
+			}
+		}
+	}
+
+	return "", fmt.Errorf("invalid log directory result from database")
+}
 
 // logCollector archives Greenplum Database log files from the master and segment directories.
 func logCollector(archiveName string) error {
@@ -37,21 +84,28 @@ func logCollector(archiveName string) error {
 	tw := tar.NewWriter(gw)
 	defer tw.Close()
 
-	// Locate the Greenplum data directories.
-	gpMasterDir := os.Getenv("MASTER_DATA_DIRECTORY")
-	if gpMasterDir == "" {
-		// Fallback for when the environment variable is not set.
-		homeDir, err := os.UserHomeDir()
-		if err == nil {
-			gpMasterDir = filepath.Join(homeDir, "gpdb", "gp-master", "gpseg-1")
+	// Get the log directory from the database first
+	logDir, err := getLogDirectoryFromDB()
+	if err != nil {
+		log.Debugf("Failed to get log directory from database: %v", err)
+
+		// Fallback to environment variable or hardcoded path
+		gpMasterDir := os.Getenv("MASTER_DATA_DIRECTORY")
+		if gpMasterDir == "" {
+			// Fallback for when the environment variable is not set.
+			homeDir, err := os.UserHomeDir()
+			if err == nil {
+				gpMasterDir = filepath.Join(homeDir, "gpdb", "gp-master", "gpseg-1")
+			}
 		}
-	}
 
-	if gpMasterDir == "" {
-		return fmt.Errorf("MASTER_DATA_DIRECTORY environment variable not set")
-	}
+		if gpMasterDir == "" {
+			return fmt.Errorf("unable to determine log directory: database query failed and MASTER_DATA_DIRECTORY environment variable not set")
+		}
 
-	logDir := filepath.Join(gpMasterDir, "pg_log")
+		logDir = filepath.Join(gpMasterDir, "pg_log")
+		log.Debugf("Using fallback log directory: %s", logDir)
+	}
 
 	// Walk the log directory and add files to the archive.
 	err = filepath.Walk(logDir, func(path string, info os.FileInfo, err error) error {
@@ -64,7 +118,7 @@ func logCollector(archiveName string) error {
 		}
 
 		// Add the file to the tar archive.
-		return addFileToTar(tw, path)
+		return addFileToTar(tw, path, logDir)
 	})
 
 	if err != nil {
@@ -76,7 +130,7 @@ func logCollector(archiveName string) error {
 }
 
 // addFileToTar is a helper function to add a file to a tar archive.
-func addFileToTar(tw *tar.Writer, path string) error {
+func addFileToTar(tw *tar.Writer, path string, basePath string) error {
 	file, err := os.Open(path)
 	if err != nil {
 		return err
@@ -94,7 +148,18 @@ func addFileToTar(tw *tar.Writer, path string) error {
 	}
 
 	// Use a relative path in the archive.
-	header.Name = strings.TrimPrefix(path, os.Getenv("MASTER_DATA_DIRECTORY"))
+	// First try MASTER_DATA_DIRECTORY, then fall back to basePath
+	masterDataDir := os.Getenv("MASTER_DATA_DIRECTORY")
+	if masterDataDir != "" {
+		header.Name = strings.TrimPrefix(path, masterDataDir)
+	} else if basePath != "" {
+		header.Name = strings.TrimPrefix(path, basePath)
+	} else {
+		header.Name = filepath.Base(path)
+	}
+
+	// Ensure header name doesn't start with /
+	header.Name = strings.TrimPrefix(header.Name, "/")
 
 	if err := tw.WriteHeader(header); err != nil {
 		return err
