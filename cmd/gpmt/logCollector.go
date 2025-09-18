@@ -92,7 +92,7 @@ func addFileToTar(tw *tar.Writer, path string) error {
 	if err != nil {
 		return err
 	}
-	
+
 	// Use a relative path in the archive.
 	header.Name = strings.TrimPrefix(path, os.Getenv("MASTER_DATA_DIRECTORY"))
 

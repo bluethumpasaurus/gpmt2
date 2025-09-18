@@ -54,3 +54,8 @@ func flagsLogCollector() {
 	logCollectorCmd.Flags().BoolVar(&lcOpts.osOnly, "os-only", false, "Only collect minimal infrastucture information")
 	logCollectorCmd.Flags().BoolVar(&lcOpts.standby, "collect-standby", false, "Collect information from the standby master")
 }
+
+func init() {
+	rootCmd.AddCommand(logCollectorCmd)
+	flagsLogCollector()
+}
