@@ -41,16 +41,27 @@ func getLogDirectoryFromDB() (string, error) {
 	}
 
 	// Extract the directory path from the result
-	for _, row := range result {
-		for _, value := range row {
-			if str, ok := value.(string); ok && str != "" {
-				logDir := strings.TrimSpace(str)
-				log.Debugf("Found log directory from database: %s", logDir)
-				return logDir, nil
+	for rowIdx, row := range result {
+		log.Debugf("Processing row %d with %d columns", rowIdx, len(row))
+		for colName, value := range row {
+			log.Debugf("Column '%s' has value of type %T: %v", colName, value, value)
+
+			var logDir string
+			if str, ok := value.(string); ok {
+				logDir = strings.TrimSpace(str)
 			} else if bytes, ok := value.([]byte); ok && len(bytes) > 0 {
-				logDir := strings.TrimSpace(string(bytes))
-				log.Debugf("Found log directory from database: %s", logDir)
+				logDir = strings.TrimSpace(string(bytes))
+			} else {
+				log.Debugf("Skipping column '%s' with unsupported type %T", colName, value)
+				continue
+			}
+
+			// Check if we got a valid non-empty directory path
+			if logDir != "" {
+				log.Debugf("Found log directory from database: '%s'", logDir)
 				return logDir, nil
+			} else {
+				log.Debugf("Column '%s' contains empty or whitespace-only value", colName)
 			}
 		}
 	}
