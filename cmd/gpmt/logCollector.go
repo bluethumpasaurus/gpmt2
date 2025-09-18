@@ -40,6 +40,8 @@ func getLogDirectoryFromDB() (string, error) {
 		return "", fmt.Errorf("no log directory found in gp_segment_configuration")
 	}
 
+	log.Debugf("Database query returned %d rows", len(result))
+
 	// Extract the directory path from the result
 	for rowIdx, row := range result {
 		log.Debugf("Processing row %d with %d columns", rowIdx, len(row))
@@ -114,8 +116,25 @@ func logCollector(archiveName string) error {
 			return fmt.Errorf("unable to determine log directory: database query failed and MASTER_DATA_DIRECTORY environment variable not set")
 		}
 
-		logDir = filepath.Join(gpMasterDir, "pg_log")
-		log.Debugf("Using fallback log directory: %s", logDir)
+		// Try both "log" (newer Greenplum) and "pg_log" (older Greenplum)
+		logDirCandidates := []string{
+			filepath.Join(gpMasterDir, "log"),
+			filepath.Join(gpMasterDir, "pg_log"),
+		}
+
+		for _, candidate := range logDirCandidates {
+			if _, err := os.Stat(candidate); err == nil {
+				logDir = candidate
+				log.Debugf("Using fallback log directory: %s", logDir)
+				break
+			}
+		}
+
+		// If none of the candidates exist, use the first one and let the error be handled later
+		if logDir == "" {
+			logDir = logDirCandidates[0]
+			log.Debugf("No existing log directory found, using: %s", logDir)
+		}
 	}
 
 	// Walk the log directory and add files to the archive.
