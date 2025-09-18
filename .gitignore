@@ -13,3 +13,6 @@
 
 # Vendored deps
 vendor/*
+
+# Build artifacts
+build/*
